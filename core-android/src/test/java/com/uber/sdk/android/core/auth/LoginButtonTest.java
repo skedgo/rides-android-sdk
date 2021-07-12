@@ -25,23 +25,20 @@ package com.uber.sdk.android.core.auth;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.util.AttributeSet;
 
 import com.google.common.collect.Sets;
+import com.uber.sdk.android.core.R;
 import com.uber.sdk.android.core.RobolectricTestBase;
+import com.uber.sdk.core.auth.AccessTokenStorage;
 import com.uber.sdk.core.auth.Scope;
-import com.uber.sdk.rides.client.SessionConfiguration;
+import com.uber.sdk.core.client.SessionConfiguration;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.robolectric.Robolectric;
-import org.robolectric.res.Attribute;
-import org.robolectric.shadows.CoreShadowsAdapter;
-import org.robolectric.shadows.RoboAttributeSet;
-
-import java.util.Arrays;
 import java.util.HashSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,7 +51,6 @@ import static org.mockito.Mockito.verify;
 
 public class LoginButtonTest extends RobolectricTestBase {
 
-    private static final String UBER_PACKAGE_NAME = "com.uber.sdk.android.core";
     private static final HashSet<Scope> SCOPES = Sets.newHashSet(Scope.HISTORY, Scope.REQUEST_RECEIPT);
     private static final int REQUEST_CODE = 11133;
     private Activity activity;
@@ -66,7 +62,7 @@ public class LoginButtonTest extends RobolectricTestBase {
     LoginCallback loginCallback;
 
     @Mock
-    AccessTokenManager accessTokenManager;
+    AccessTokenStorage accessTokenStorage;
 
     private LoginButton loginButton;
 
@@ -100,9 +96,9 @@ public class LoginButtonTest extends RobolectricTestBase {
 
     @Test
     public void testButtonClickWithScopesFromXml_shouldUseParseScopes() {
-        AttributeSet attributeSet = makeAttributeSet(
-                makeAttribute(UBER_PACKAGE_NAME + ":attr/ub__scopes", "history|request_receipt")
-        );
+        AttributeSet attributeSet = Robolectric.buildAttributeSet()
+                .addAttribute(R.attr.ub__scopes, "history|request_receipt")
+                .build();
 
         loginButton = new TestLoginButton(activity, attributeSet, loginManager);
         loginButton.setCallback(loginCallback);
@@ -114,10 +110,10 @@ public class LoginButtonTest extends RobolectricTestBase {
 
     @Test
     public void testButtonClickWithScopesRequestCodeFromXml_shouldUseParseAll() {
-        AttributeSet attributeSet = makeAttributeSet(
-                makeAttribute(UBER_PACKAGE_NAME + ":attr/ub__scopes", "history|request_receipt"),
-                makeAttribute(UBER_PACKAGE_NAME + ":attr/ub__request_code", REQUEST_CODE)
-        );
+        AttributeSet attributeSet = Robolectric.buildAttributeSet()
+                .addAttribute(R.attr.ub__scopes, "history|request_receipt")
+                .addAttribute(R.attr.ub__request_code, String.valueOf(REQUEST_CODE))
+                .build();
 
         loginButton = new TestLoginButton(activity, attributeSet, loginManager);
         loginButton.setCallback(loginCallback);
@@ -129,21 +125,23 @@ public class LoginButtonTest extends RobolectricTestBase {
 
     @Test
     public void testButtonClickWithoutLoginManager_shouldCreateNew() {
-        AttributeSet attributeSet = makeAttributeSet(
-                makeAttribute(UBER_PACKAGE_NAME + ":attr/ub__scopes", "history|request_receipt"),
-                makeAttribute(UBER_PACKAGE_NAME + ":attr/ub__request_code", REQUEST_CODE)
-        );
+        AttributeSet attributeSet = Robolectric.buildAttributeSet()
+                .addAttribute(R.attr.ub__scopes, "history|request_receipt")
+                .addAttribute(R.attr.ub__request_code, String.valueOf(REQUEST_CODE))
+                .build();
 
         loginButton = new LoginButton(activity, attributeSet);
-        loginButton.setSessionConfiguration(new SessionConfiguration.Builder().setClientId("clientId").build());
+        loginButton.setSessionConfiguration(new SessionConfiguration.Builder()
+                .setRedirectUri("com.example://redirect")
+                .setClientId("clientId").build());
         loginButton.setCallback(loginCallback);
         loginButton.setScopes(SCOPES);
-        loginButton.setAccessTokenManager(accessTokenManager);
+        loginButton.setAccessTokenStorage(accessTokenStorage);
         loginButton.callOnClick();
 
         assertThat(loginButton.getLoginManager()).isNotNull();
-        assertThat(loginButton.getLoginManager().getAccessTokenManager())
-                .isEqualTo(accessTokenManager);
+        assertThat(loginButton.getLoginManager().getAccessTokenStorage())
+                .isEqualTo(accessTokenStorage);
     }
 
     @Test
@@ -190,13 +188,5 @@ public class LoginButtonTest extends RobolectricTestBase {
         protected LoginManager getOrCreateLoginManager() {
             return manager;
         }
-    }
-
-    private static AttributeSet makeAttributeSet(Attribute... attributes) {
-        return new RoboAttributeSet(Arrays.asList(attributes), new CoreShadowsAdapter().getResourceLoader());
-    }
-
-    private static Attribute makeAttribute(String fullyQualifiedAttributeName, Object value) {
-        return new Attribute(fullyQualifiedAttributeName, String.valueOf(value), UBER_PACKAGE_NAME);
     }
 }

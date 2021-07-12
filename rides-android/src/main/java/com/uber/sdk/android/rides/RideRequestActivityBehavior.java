@@ -25,16 +25,19 @@ package com.uber.sdk.android.rides;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.uber.sdk.android.core.UberSdk;
 import com.uber.sdk.android.core.auth.AccessTokenManager;
-import com.uber.sdk.core.auth.AccessTokenStorage;
-import com.uber.sdk.rides.client.SessionConfiguration;
+import com.uber.sdk.core.client.SessionConfiguration;
 
 /**
  * The {@link RideRequestBehavior} to pass to the {@link RideRequestButton} to have it launch a {@link RideRequestActivity}.
+
+ * @deprecated in favor of directly using mobile web directly.
+ * See https://developer.uber.com/docs/riders/ride-requests/tutorials/widget/migration-to-muber
  */
+@Deprecated
 public class RideRequestActivityBehavior implements RideRequestBehavior {
 
     @NonNull private final Activity activity;
@@ -71,7 +74,7 @@ public class RideRequestActivityBehavior implements RideRequestBehavior {
      * @param activity the {@link Activity} to launch the {@link RideRequestActivity} from
      * @param requestCode the request code to use for the {@link Activity} result
      * @param loginConfiguration used for login scenarios from ride request screen
-     * @param accessTokenStorageKey key to use for looking in {@link AccessTokenStorage}
+     * @param accessTokenStorageKey key to use for looking in {@link com.uber.sdk.core.auth.AccessTokenStorage}
      */
     public RideRequestActivityBehavior(@NonNull Activity activity,
                                        int requestCode,

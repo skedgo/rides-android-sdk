@@ -26,11 +26,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.TypedArray;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.StringRes;
-import android.support.annotation.StyleRes;
-import android.support.annotation.VisibleForTesting;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
+import androidx.annotation.StyleRes;
+import androidx.annotation.VisibleForTesting;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -38,12 +38,12 @@ import com.uber.sdk.android.core.R;
 import com.uber.sdk.android.core.UberButton;
 import com.uber.sdk.android.core.UberSdk;
 import com.uber.sdk.android.core.UberStyle;
+import com.uber.sdk.core.auth.AccessTokenStorage;
 import com.uber.sdk.core.auth.Scope;
-import com.uber.sdk.rides.client.SessionConfiguration;
+import com.uber.sdk.core.client.SessionConfiguration;
 
 import java.util.Collection;
 
-import static com.uber.sdk.android.core.utils.Preconditions.checkNotEmpty;
 import static com.uber.sdk.android.core.utils.Preconditions.checkNotNull;
 
 /**
@@ -55,7 +55,7 @@ public class LoginButton extends UberButton {
     int[] STYLES = {R.style.UberButton_Login,
             R.style.UberButton_Login_White};
 
-    private AccessTokenManager accessTokenManager;
+    private AccessTokenStorage accessTokenStorage;
     private SessionConfiguration sessionConfiguration;
     private LoginManager loginManager;
     private LoginCallback callback;
@@ -164,13 +164,26 @@ public class LoginButton extends UberButton {
     }
 
     /**
-     * Optionally provide {@link AccessTokenManager}. If none provided, one will be created.
+     * Optionally provide {@link AccessTokenStorage}. If none provided, one will be created.
      *
-     * @param accessTokenManager
+     * @param accessTokenStorage
      * @return this instance of {@link LoginButton}
      */
-    public LoginButton setAccessTokenManager(AccessTokenManager accessTokenManager) {
-        this.accessTokenManager = accessTokenManager;
+    public LoginButton setAccessTokenStorage(AccessTokenStorage accessTokenStorage) {
+        this.accessTokenStorage = accessTokenStorage;
+        return this;
+    }
+
+    /**
+     * Optionally provide {@link AccessTokenStorage}. If none provided, one will be created.
+     *
+     * @param accessTokenStorage
+     * @return this instance of {@link LoginButton}
+     * @deprecated use {@link LoginButton#setAccessTokenStorage(AccessTokenStorage)}
+     */
+    @Deprecated
+    public LoginButton setAccessTokenManager(AccessTokenStorage accessTokenStorage) {
+        this.accessTokenStorage = accessTokenStorage;
         return this;
     }
 
@@ -228,7 +241,7 @@ public class LoginButton extends UberButton {
     @VisibleForTesting
     protected synchronized LoginManager getOrCreateLoginManager() {
         if (loginManager == null) {
-            loginManager = new LoginManager(getOrCreateAccessTokenManager(),
+            loginManager = new LoginManager(getOrCreateAccessTokenStorage(),
                     callback,
                     getOrCreateSessionConfiguration(),
                     requestCode);
@@ -237,11 +250,11 @@ public class LoginButton extends UberButton {
     }
 
     @NonNull
-    protected synchronized AccessTokenManager getOrCreateAccessTokenManager() {
-        if (accessTokenManager == null) {
-            accessTokenManager = new AccessTokenManager(getContext());
+    protected synchronized AccessTokenStorage getOrCreateAccessTokenStorage() {
+        if (accessTokenStorage == null) {
+            accessTokenStorage = new AccessTokenManager(getContext());
         }
-        return accessTokenManager;
+        return accessTokenStorage;
     }
 
     @NonNull

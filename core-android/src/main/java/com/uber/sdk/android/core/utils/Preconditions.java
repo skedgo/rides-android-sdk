@@ -22,7 +22,7 @@
 
 package com.uber.sdk.android.core.utils;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import java.util.Collection;
 
@@ -45,7 +45,6 @@ public class Preconditions {
             throw new IllegalStateException(errorMessage);
         }
     }
-
 
     /**
      * Ensures the value is not null.

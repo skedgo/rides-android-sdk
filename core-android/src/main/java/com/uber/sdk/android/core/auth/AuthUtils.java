@@ -22,23 +22,30 @@
 
 package com.uber.sdk.android.core.auth;
 
+import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.webkit.WebView;
 
 import com.uber.sdk.core.auth.AccessToken;
 import com.uber.sdk.core.auth.Scope;
+import com.uber.sdk.core.client.SessionConfiguration;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 /**
  * A utility class for the Uber SDK.
  */
 class AuthUtils {
+    static final String KEY_AUTHENTICATION_CODE = "code";
     static final String KEY_EXPIRATION_TIME = "expires_in";
     static final String KEY_SCOPES = "scope";
     static final String KEY_TOKEN = "access_token";
@@ -91,7 +98,11 @@ class AuthUtils {
 
         String[] scopeStrings = scopesString.split(" ");
         for (String scopeName : scopeStrings) {
-            scopeCollection.add(Scope.valueOf(scopeName.toUpperCase()));
+            try {
+                scopeCollection.add(Scope.valueOf(scopeName.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                // do nothing, will omit custom or bad scopes
+            }
         }
 
         return scopeCollection;
@@ -112,6 +123,20 @@ class AuthUtils {
             scopeCollection.add(Scope.valueOf(scopeName));
         }
         return scopeCollection;
+    }
+
+
+    public static boolean isRedirectUriRegistered(@NonNull Activity activity, @NonNull Uri uri) {
+
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        intent.setAction(Intent.ACTION_VIEW);
+        intent.setData(uri);
+        ComponentName info = intent.resolveActivity(activity.getPackageManager());
+
+        return info != null && info.getClassName().equals(LoginRedirectReceiverActivity.class
+                .getName());
+
+
     }
 
     /**
@@ -146,7 +171,29 @@ class AuthUtils {
     }
 
     @NonNull
-    static Intent parseTokenUri(@NonNull Uri uri) throws LoginAuthenticationException {
+    static AccessToken parseTokenUri(@NonNull Uri uri) throws LoginAuthenticationException {
+        final long expiresIn;
+        try {
+            expiresIn = Long.valueOf(uri.getQueryParameter(KEY_EXPIRATION_TIME));
+        } catch (NumberFormatException ex) {
+            throw new LoginAuthenticationException(AuthenticationError.INVALID_RESPONSE);
+        }
+
+        final String accessToken = uri.getQueryParameter(KEY_TOKEN);
+        final String refreshToken = uri.getQueryParameter(KEY_REFRESH_TOKEN);
+        final String scope = uri.getQueryParameter(KEY_SCOPES);
+        final String tokenType = uri.getQueryParameter(KEY_TOKEN_TYPE);
+
+        if (TextUtils.isEmpty(accessToken) || TextUtils.isEmpty(scope) || TextUtils.isEmpty(tokenType)) {
+            throw new LoginAuthenticationException(AuthenticationError.INVALID_RESPONSE);
+        }
+
+        return new AccessToken(expiresIn, AuthUtils.stringToScopeCollection
+                (scope), accessToken, refreshToken, tokenType);
+    }
+
+    @NonNull
+    static Intent parseTokenUriToIntent(@NonNull Uri uri) throws LoginAuthenticationException {
         final long expiresIn;
         try {
             expiresIn = Long.valueOf(uri.getQueryParameter(KEY_EXPIRATION_TIME));
@@ -172,8 +219,12 @@ class AuthUtils {
         return data;
     }
 
+    static boolean isAuthorizationCodePresent(@NonNull Uri uri) {
+        return !TextUtils.isEmpty(uri.getQueryParameter(KEY_AUTHENTICATION_CODE));
+    }
+
     static String parseAuthorizationCode(@NonNull Uri uri) throws LoginAuthenticationException {
-        final String code = uri.getQueryParameter("code");
+        final String code = uri.getQueryParameter(KEY_AUTHENTICATION_CODE);
         if (TextUtils.isEmpty(code)) {
             throw new LoginAuthenticationException(AuthenticationError.INVALID_RESPONSE);
         }
@@ -196,5 +247,53 @@ class AuthUtils {
 
     static String createEncodedParam(String rawParam) {
         return Base64.encodeToString(rawParam.getBytes(), Base64.DEFAULT);
+    }
+
+    /**
+     * Builds a URL {@link String} using the necessary parameters to load in the {@link WebView}.
+     *
+     * @return the URL to load in the {@link WebView}
+     */
+    @NonNull
+    static String buildUrl(
+            @NonNull String redirectUri,
+            @NonNull ResponseType responseType,
+            @NonNull SessionConfiguration configuration) {
+
+        final String CLIENT_ID_PARAM = "client_id";
+        final String ENDPOINT = "login";
+        final String HTTPS = "https";
+        final String PATH = "oauth/v2/authorize";
+        final String REDIRECT_PARAM = "redirect_uri";
+        final String RESPONSE_TYPE_PARAM = "response_type";
+        final String SCOPE_PARAM = "scope";
+        final String SHOW_FB_PARAM = "show_fb";
+        final String SIGNUP_PARAMS = "signup_params";
+        final String REDIRECT_LOGIN = "{\"redirect_to_login\":true}";
+
+
+
+        Uri.Builder builder = new Uri.Builder();
+        builder.scheme(HTTPS)
+                .authority(ENDPOINT + "." + configuration.getEndpointRegion().getDomain())
+                .appendEncodedPath(PATH)
+                .appendQueryParameter(CLIENT_ID_PARAM, configuration.getClientId())
+                .appendQueryParameter(REDIRECT_PARAM, redirectUri)
+                .appendQueryParameter(RESPONSE_TYPE_PARAM, responseType.toString().toLowerCase(
+                        Locale.US))
+                .appendQueryParameter(SCOPE_PARAM, getScopes(configuration))
+                .appendQueryParameter(SHOW_FB_PARAM, "false")
+                .appendQueryParameter(SIGNUP_PARAMS, AuthUtils.createEncodedParam(REDIRECT_LOGIN));
+
+        return builder.build().toString();
+    }
+
+    private static String getScopes(SessionConfiguration configuration) {
+        String scopes = AuthUtils.scopeCollectionToString(configuration.getScopes());
+        if (!configuration.getCustomScopes().isEmpty()) {
+            scopes =  AuthUtils.mergeScopeStrings(scopes,
+                    AuthUtils.customScopeCollectionToString(configuration.getCustomScopes()));
+        }
+        return scopes;
     }
 }

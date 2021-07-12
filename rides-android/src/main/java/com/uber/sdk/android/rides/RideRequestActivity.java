@@ -30,21 +30,22 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.StringRes;
-import android.support.annotation.VisibleForTesting;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
+import androidx.annotation.VisibleForTesting;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.uber.sdk.android.core.auth.AccessTokenManager;
 import com.uber.sdk.android.core.auth.AuthenticationError;
 import com.uber.sdk.android.core.auth.LoginCallback;
 import com.uber.sdk.android.core.auth.LoginManager;
 import com.uber.sdk.core.auth.AccessToken;
+import com.uber.sdk.core.auth.AccessTokenStorage;
 import com.uber.sdk.core.auth.Scope;
-import com.uber.sdk.rides.client.AccessTokenSession;
-import com.uber.sdk.rides.client.SessionConfiguration;
+import com.uber.sdk.core.client.AccessTokenSession;
+import com.uber.sdk.core.client.SessionConfiguration;
 
 import java.util.Arrays;
 
@@ -68,13 +69,14 @@ public class RideRequestActivity extends Activity implements LoginCallback, Ride
     static final int LOGIN_REQUEST_CODE = 1112;
 
     private static final int REQUEST_FINE_LOCATION_PERMISSION_CODE = 1002;
-    private static final String USER_AGENT_RIDE_WIDGET = "rides-android-v0.5.4-ride_request_widget";
+    private static final String USER_AGENT_RIDE_WIDGET = String.format("rides-android-v%s-ride_request_widget",
+            BuildConfig.VERSION_NAME);
 
     @VisibleForTesting static final String RIDE_PARAMETERS = "ride_parameters";
     static final String EXTRA_LOGIN_CONFIGURATION = "login_configuration";
     static final String EXTRA_ACCESS_TOKEN_STORAGE_KEY = "access_token_storage_key";
 
-    @VisibleForTesting AccessTokenManager accessTokenManager;
+    @VisibleForTesting AccessTokenStorage accessTokenStorage;
     @Nullable @VisibleForTesting AlertDialog authenticationErrorDialog;
     @Nullable @VisibleForTesting AlertDialog rideRequestErrorDialog;
     @VisibleForTesting RideRequestView rideRequestView;
@@ -92,9 +94,9 @@ public class RideRequestActivity extends Activity implements LoginCallback, Ride
      */
     @NonNull
     public static Intent newIntent(@NonNull Context context,
-                                   @Nullable RideParameters rideParameters,
-                                   @NonNull SessionConfiguration loginConfiguration,
-                                   @Nullable String accessTokenStorageKey) {
+            @Nullable RideParameters rideParameters,
+            @NonNull SessionConfiguration loginConfiguration,
+            @Nullable String accessTokenStorageKey) {
         Intent data = new Intent(context, RideRequestActivity.class);
 
         if (rideParameters == null) {
@@ -118,7 +120,7 @@ public class RideRequestActivity extends Activity implements LoginCallback, Ride
                 .getString(EXTRA_ACCESS_TOKEN_STORAGE_KEY, AccessTokenManager.ACCESS_TOKEN_DEFAULT_KEY);
 
         rideRequestView = (RideRequestView) findViewById(R.id.ub__ride_request_view);
-        accessTokenManager = new AccessTokenManager(this, accessTokenStorageKey);
+        accessTokenStorage = new AccessTokenManager(this, accessTokenStorageKey);
 
         RideParameters rideParameters = getIntent().getParcelableExtra(RIDE_PARAMETERS);
         if (rideParameters == null) {
@@ -135,7 +137,7 @@ public class RideRequestActivity extends Activity implements LoginCallback, Ride
                 .setScopes(Arrays.asList(Scope.RIDE_WIDGETS))
                 .build();
 
-        loginManager = new LoginManager(accessTokenManager, this, sessionConfiguration, LOGIN_REQUEST_CODE);
+        loginManager = new LoginManager(accessTokenStorage, this, sessionConfiguration, LOGIN_REQUEST_CODE);
         rideRequestView.setRideParameters(rideParameters);
         rideRequestView.setRideRequestViewCallback(this);
 
@@ -173,7 +175,7 @@ public class RideRequestActivity extends Activity implements LoginCallback, Ride
                 break;
             case NO_ACCESS_TOKEN:
             case UNAUTHORIZED:
-                accessTokenManager.removeAccessToken();
+                accessTokenStorage.removeAccessToken();
                 login();
                 break;
             default:
@@ -211,7 +213,7 @@ public class RideRequestActivity extends Activity implements LoginCallback, Ride
 
     @Override
     public void onLoginSuccess(@NonNull AccessToken accessToken) {
-        accessTokenManager.setAccessToken(accessToken);
+        accessTokenStorage.setAccessToken(accessToken);
         load();
     }
 
@@ -237,10 +239,11 @@ public class RideRequestActivity extends Activity implements LoginCallback, Ride
      * Loads the appropriate view in the activity based on whether user is successfully authorized or not.
      */
     private void load() {
-        AccessToken accessToken = accessTokenManager.getAccessToken();
+        AccessToken accessToken = accessTokenStorage.getAccessToken();
 
         if (accessToken != null) {
-            AccessTokenSession session = new AccessTokenSession(sessionConfiguration, accessTokenManager);
+            AccessTokenSession session = new AccessTokenSession(sessionConfiguration,
+                    accessTokenStorage);
             rideRequestView.setSession(session);
 
             loadRideRequestView();

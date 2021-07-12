@@ -24,8 +24,8 @@ package com.uber.sdk.android.rides;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * Represents the parameters for an Uber ride.
@@ -201,7 +201,7 @@ public class RideParameters implements Parcelable {
     }
 
     /**
-     * Sets the user agent, describing where this {@link RequestDeeplink} came from for analytics.
+     * Sets the user agent, describing where this {@link RideRequestDeeplink} came from for analytics.
      * @param userAgent to set
      */
     void setUserAgent(@NonNull String userAgent) {

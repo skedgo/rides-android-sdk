@@ -28,22 +28,23 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.StyleRes;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.StyleRes;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.uber.sdk.android.core.Deeplink;
 import com.uber.sdk.android.core.UberButton;
 import com.uber.sdk.android.core.UberSdk;
 import com.uber.sdk.android.core.UberStyle;
 import com.uber.sdk.android.rides.internal.RideRequestButtonController;
 import com.uber.sdk.android.rides.internal.RideRequestButtonView;
-import com.uber.sdk.rides.client.Session;
-import com.uber.sdk.rides.client.SessionConfiguration;
+import com.uber.sdk.core.client.Session;
+import com.uber.sdk.core.client.SessionConfiguration;
 import com.uber.sdk.rides.client.model.PriceEstimate;
 import com.uber.sdk.rides.client.model.TimeEstimate;
 
@@ -61,7 +62,8 @@ public class RideRequestButton extends FrameLayout implements RideRequestButtonV
     @StyleRes
     int[] STYLES = {R.style.UberButton, R.style.UberButton_White};
 
-    private static final String USER_AGENT_BUTTON = "rides-android-v0.5.4-button";
+    private static final String USER_AGENT_BUTTON = String.format("rides-android-v%s-button",
+            BuildConfig.VERSION_NAME);
 
     private RideRequestBehavior rideRequestBehavior;
 
@@ -74,6 +76,7 @@ public class RideRequestButton extends FrameLayout implements RideRequestButtonV
     private RideRequestButtonController controller;
     private Session session;
     private RideRequestButtonCallback callback;
+    private Deeplink.Fallback deeplinkFallback;
 
     public RideRequestButton(Context context) {
         this(context, null);
@@ -97,7 +100,7 @@ public class RideRequestButton extends FrameLayout implements RideRequestButtonV
         init(context, attrs, defStyleAttr, uberStyle);
     }
 
-    private void init(Context context, AttributeSet attrs, int defStyleAttr, UberStyle uberStyle) {
+    private void init(final Context context, AttributeSet attrs, int defStyleAttr, UberStyle uberStyle) {
 
         @StyleRes int styleRes = STYLES[uberStyle.getValue()];
 
@@ -112,20 +115,25 @@ public class RideRequestButton extends FrameLayout implements RideRequestButtonV
         setTextAttributes(context, attrs, defStyleAttr, styleRes);
 
         showDefaultView();
+        deeplinkFallback = Deeplink.Fallback.APP_INSTALL;
         setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
                 rideParameters.setUserAgent(USER_AGENT_BUTTON);
-                if (rideRequestBehavior == null) {
-                    final SessionConfiguration config;
-                    if (session != null) {
-                        config = session.getAuthenticator().getSessionConfiguration();
-                    } else {
-                        config = UberSdk.getDefaultSessionConfiguration();
-                    }
-                    rideRequestBehavior = new RequestDeeplinkBehavior(config);
+
+                final SessionConfiguration config;
+                if (session != null) {
+                    config = session.getAuthenticator().getSessionConfiguration();
+                } else {
+                    config = UberSdk.getDefaultSessionConfiguration();
                 }
-                rideRequestBehavior.requestRide(getContext(), rideParameters);
+
+                RideRequestDeeplink deeplink = new RideRequestDeeplink.Builder(context)
+                        .setSessionConfiguration(config)
+                        .setFallback(deeplinkFallback)
+                        .setRideParameters(rideParameters)
+                        .build();
+                deeplink.execute();
             }
         });
     }
@@ -142,11 +150,25 @@ public class RideRequestButton extends FrameLayout implements RideRequestButtonV
     }
 
     /**
+     * Sets the {@link Deeplink.Fallback} to be used when the Uber app isn't installed
+     *
+     * @return this instance of {@link RideRequestButton}
+     */
+    public RideRequestButton setDeeplinkFallback(@NonNull Deeplink.Fallback fallback) {
+        this.deeplinkFallback = fallback;
+        return this;
+    }
+
+    /**
      * Sets how the request button should act for button actions.
      *
      * @param requestBehavior an object that implements {@link RideRequestBehavior}
      * @return this instance of {@link RideRequestButton}
+     *
+     * @deprecated Button will use deeplink by default use RideRequestButton to indicate fallback
+     * now instead.
      */
+    @Deprecated
     public RideRequestButton setRequestBehavior(@NonNull RideRequestBehavior requestBehavior) {
         rideRequestBehavior = requestBehavior;
         return this;

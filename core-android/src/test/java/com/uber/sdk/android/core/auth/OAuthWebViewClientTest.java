@@ -29,7 +29,7 @@ import android.webkit.WebView;
 
 import com.uber.sdk.android.core.RobolectricTestBase;
 import com.uber.sdk.core.auth.Scope;
-import com.uber.sdk.rides.client.SessionConfiguration;
+import com.uber.sdk.core.client.SessionConfiguration;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -65,41 +65,6 @@ public class OAuthWebViewClientTest extends RobolectricTestBase {
     public void setUp() {
         testLoginActivity = spy(new TestLoginActivity());
         client = testLoginActivity.new AccessTokenClient(REDIRECT_URI);
-    }
-
-    @Test
-    public void onBuildUrl_withDefaultRegion_shouldHaveDefaultUberDomain() {
-        String clientId = "clientId1234";
-        String redirectUri = "localHost1234";
-
-        SessionConfiguration loginConfiguration = new SessionConfiguration.Builder()
-                .setRedirectUri(redirectUri)
-                .setScopes(Arrays.asList(Scope.HISTORY))
-                .setClientId(clientId)
-                .build();
-
-        String url = testLoginActivity.buildUrl(redirectUri, ResponseType.TOKEN, loginConfiguration);
-        assertEquals("https://login.uber.com/oauth/v2/authorize?client_id=" + clientId +
-                "&redirect_uri=" + redirectUri + "&response_type=token&scope=history&" +
-                "show_fb=false&signup_params=eyJyZWRpcmVjdF90b19sb2dpbiI6dHJ1ZX0%3D%0A", url);
-    }
-
-    @Test
-    public void onBuildUrl_withChinaRegion_shouldHaveChinaDomain() {
-        String clientId = "clientId1234";
-        String redirectUri = "localHost1234";
-
-        SessionConfiguration loginConfiguration = new SessionConfiguration.Builder()
-                .setRedirectUri(redirectUri)
-                .setClientId(clientId)
-                .setScopes(Arrays.asList(Scope.HISTORY))
-                .setEndpointRegion(SessionConfiguration.EndpointRegion.CHINA).build();
-
-        String url = testLoginActivity.buildUrl(redirectUri, ResponseType.TOKEN, loginConfiguration);
-        assertEquals(
-                "https://login.uber.com.cn/oauth/v2/authorize?client_id=" + clientId +
-                        "&redirect_uri=" + redirectUri + "&response_type=token&scope=history" +
-                        "&show_fb=false&signup_params=eyJyZWRpcmVjdF90b19sb2dpbiI6dHJ1ZX0%3D%0A", url);
     }
 
     @Test

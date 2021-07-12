@@ -22,29 +22,25 @@
 
 package com.uber.sdk.android.rides.samples;
 
-import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.uber.sdk.android.core.Deeplink;
 import com.uber.sdk.android.core.auth.AccessTokenManager;
-import com.uber.sdk.android.core.auth.AuthenticationError;
 import com.uber.sdk.android.rides.RideParameters;
-import com.uber.sdk.android.rides.RideRequestActivity;
-import com.uber.sdk.android.rides.RideRequestActivityBehavior;
 import com.uber.sdk.android.rides.RideRequestButton;
 import com.uber.sdk.android.rides.RideRequestButtonCallback;
-import com.uber.sdk.android.rides.RideRequestViewError;
 import com.uber.sdk.core.auth.AccessToken;
-import com.uber.sdk.rides.client.ServerTokenSession;
-import com.uber.sdk.rides.client.SessionConfiguration;
+import com.uber.sdk.core.auth.AccessTokenStorage;
+import com.uber.sdk.core.client.ServerTokenSession;
+import com.uber.sdk.core.client.SessionConfiguration;
 import com.uber.sdk.rides.client.error.ApiError;
 
 import static com.uber.sdk.android.core.utils.Preconditions.checkNotNull;
@@ -85,10 +81,6 @@ public class SampleActivity extends AppCompatActivity implements RideRequestButt
                 .setServerToken(SERVER_TOKEN)
                 .build();
 
-        // Optional: to use the SDK in China, set the region property
-        // See https://developer.uber.com/docs/china for more details.
-        // configuration.setEndpointRegion(SessionConfiguration.EndpointRegion.CHINA);
-
         validateConfiguration(configuration);
         ServerTokenSession session = new ServerTokenSession(configuration);
 
@@ -110,14 +102,10 @@ public class SampleActivity extends AppCompatActivity implements RideRequestButt
                 .setDropoffLocation(DROPOFF_LAT, DROPOFF_LONG, DROPOFF_NICK, DROPOFF_ADDR)
                 .build();
 
-        // This button demonstrates launching the RideRequestActivity (customized button behavior).
-        // You can optionally setRideParameters for pre-filled pickup and dropoff locations.
         RideRequestButton uberButtonWhite = (RideRequestButton) findViewById(R.id.uber_button_white);
-        RideRequestActivityBehavior rideRequestActivityBehavior = new RideRequestActivityBehavior(this,
-                WIDGET_REQUEST_CODE, configuration);
-        uberButtonWhite.setRequestBehavior(rideRequestActivityBehavior);
         uberButtonWhite.setRideParameters(rideParametersForProduct);
         uberButtonWhite.setSession(session);
+        uberButtonWhite.setDeeplinkFallback(Deeplink.Fallback.MOBILE_WEB);
         uberButtonWhite.loadRideInformation();
     }
 
@@ -138,24 +126,6 @@ public class SampleActivity extends AppCompatActivity implements RideRequestButt
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == WIDGET_REQUEST_CODE && resultCode == Activity.RESULT_CANCELED && data != null) {
-            if (data.getSerializableExtra(RideRequestActivity.AUTHENTICATION_ERROR) != null) {
-                AuthenticationError error = (AuthenticationError) data.getSerializableExtra(RideRequestActivity
-                        .AUTHENTICATION_ERROR);
-                Toast.makeText(SampleActivity.this, "Auth error " + error.name(), Toast.LENGTH_SHORT).show();
-                Log.d(ERROR_LOG_TAG, "Error occurred during authentication: " + error.toString
-                        ().toLowerCase());
-            } else if (data.getSerializableExtra(RideRequestActivity.RIDE_REQUEST_ERROR) != null) {
-                RideRequestViewError error = (RideRequestViewError) data.getSerializableExtra(RideRequestActivity
-                        .RIDE_REQUEST_ERROR);
-                Toast.makeText(SampleActivity.this, "RideRequest error " + error.name(), Toast.LENGTH_SHORT).show();
-                Log.d(ERROR_LOG_TAG, "Error occurred in the Ride Request Widget: " + error.toString().toLowerCase());
-            }
-        }
-    }
-
-    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
@@ -169,15 +139,15 @@ public class SampleActivity extends AppCompatActivity implements RideRequestButt
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        AccessTokenManager accessTokenManager = new AccessTokenManager(this);
+        AccessTokenStorage accessTokenStorage = new AccessTokenManager(this);
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_clear) {
-            accessTokenManager.removeAccessToken();
+            accessTokenStorage.removeAccessToken();
             Toast.makeText(this, "AccessToken cleared", Toast.LENGTH_SHORT).show();
             return true;
         } else if (id == R.id.action_copy) {
-            AccessToken accessToken = accessTokenManager.getAccessToken();
+            AccessToken accessToken = accessTokenStorage.getAccessToken();
 
             String message = accessToken == null ? "No AccessToken stored" : "AccessToken copied to clipboard";
             if (accessToken != null) {

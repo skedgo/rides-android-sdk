@@ -1,5 +1,82 @@
-v0.5.5 - TBD
+v0.10.3 - TBD
+-------------
+
+v0.10.2 - 12/03/2019
+-------------
+
+v0.10.1 - 02/27/2019
+-------------
+
+### Fixed
+ - [Issue #153](https://github.com/uber/rides-android-sdk/issues/153) NullPointerException when login via SSO without setting product flow priority
+ - [Issue #151](https://github.com/uber/rides-android-sdk/issues/151) Login throws IllegalStateException when using only CustomScopes
+
+
+v0.10.0 - 12/14/2018
 ------------
+
+### Added
+ - [Issue #144](https://github.com/uber/rides-android-sdk/issues/144) Allow SSO Client to dictate which Uber Apps can be used for SSO
+ - [Issue #138](https://github.com/uber/rides-android-sdk/issues/138) Support for IETF RFC 8252
+ - [Issue #130](https://github.com/uber/rides-android-sdk/issues/130) Support for Uber Eats SSO
+
+### Fixed
+ - [Issue #129](https://github.com/uber/rides-android-sdk/issues/129) Allow use of refresh token for non-privileged scopes
+ - [Issue #119](https://github.com/uber/rides-android-sdk/issues/119) Redirect URL documentation issue
+
+v0.9.1 - 03/20/2018
+------------
+
+### Fixed
+ - [Issue #115](https://github.com/uber/rides-android-sdk/issues/115) Release Script is creating invalid release notes/download artifacts.
+ - Updated to Java SDK 0.8.0 to fix Token Refresh NPE
+
+
+v0.9.0 - 02/13/2018
+------------
+
+### Added
+- [Issue #111](https://github.com/uber/rides-android-sdk/issues/111) Add Uber Mobile Web support
+  over deprecated Ride Request Widget
+
+### Fixed
+ - [Issue #105](https://github.com/uber/rides-android-sdk/issues/105) onReceivedError and onReceivedHttpError does not work on API level < 23
+
+v0.8.0 - 02/09/2018
+------------
+
+### Changed
+ - [Issue #101](https://github.com/uber/rides-android-sdk/issues/101) LoginManager now uses AccessTokenStorage
+
+### Added
+ - [Issue #22](https://github.com/uber/rides-android-sdk/issues/22) Customtab support
+
+
+v0.7.0 - 11/17/2017
+------------
+
+### Fixed
+- Moved all release, dependencies, and snapshot code to gradle folder in root
+
+### Breaking
+- Upgraded dependencies on uber java sdk to [modularized SDK](https://github.com/uber/rides-java-sdk/blob/master/CHANGELOG.md). This moved imports to follow the new format.
+
+v0.6.1 - 4/5/2017
+-------------------
+### Changed
+ - AuthUtils now omits unrecognized scopes from parsed AccessToken instead of throwing an exception when creating
+
+v0.6.0 - 2/14/2017
+-------------------
+### Fixed
+- [Issue #71](https://github.com/uber/rides-android-sdk/issues/71) LoginManager breaks when used with Rides SDK 0.6.0
+- [Issue #65](https://github.com/uber/rides-android-sdk/issues/65) Empty AndroidHttpClient get compiled when using core-android 0.5.4 leading to unresolved references to actual methods of AndroidHttpClient
+
+### Added
+- Updated to match API 1.2 changes
+
+### Breaking
+- Removed Region (China) support
 
 v0.5.4 - 9/29/2016
 ------------------
@@ -12,6 +89,7 @@ v0.5.4 - 9/29/2016
 - [Issue #44](https://github.com/uber/rides-android-sdk/issues/44) Null pointer exception when selected setPickupToMyLocation
 - [Issue #48](https://github.com/uber/rides-android-sdk/issues/48) Typo in Readme.md
 - [Issue #54](https://github.com/uber/rides-android-sdk/issues/54) log4j lib still exists in 0.5.3 causing Proguard failing
+
 
 v0.5.3 - 8/12/2016
 ------------------

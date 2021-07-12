@@ -22,7 +22,7 @@
 
 package com.uber.sdk.android.core.auth;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import java.util.Locale;
 
@@ -30,6 +30,11 @@ import java.util.Locale;
  * Possible errors that can occur during authentication.
  */
 public enum AuthenticationError {
+
+    /**
+     * User cancelled flow
+     */
+    CANCELLED,
 
     /**
      * There was a connectivity error while trying to load.
